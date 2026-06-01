@@ -1,11 +1,3 @@
-# TroHub Web Admin
-
-Ban build lại web quản lý phòng trọ TroHub, chỉ gồm giao diện Web Admin.
-
-- Không dùng API.
-- Không dùng database.
-- Không có mobile app tenant.
-- Dữ liệu demo nằm trong `src/data.js`.
 
 ## Chạy web
 
