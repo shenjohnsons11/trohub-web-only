@@ -8,3 +8,5 @@ server/mongodb.log
 
 # Môi trường
 src/env.js
+API_DuAnTotNghiep/node_modules/
+API_DuAnTotNghiep/.env
