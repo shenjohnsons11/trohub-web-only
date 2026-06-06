@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=13";
+import { api } from "./api.js?v=14";
 
 const app = document.querySelector("#app");
 
@@ -635,6 +635,11 @@ const renderContract = () => {
           ${moneyInputField("Tiền cọc", c.deposit, "deposit")}
           ${selectField("Trạng thái", c.status || "Chờ ký", ["Chờ ký", "Đang hiệu lực", "Đã kết thúc"], "status")}
         </div>
+        <div class="form-actions" style="margin-top:16px;">
+          ${button("Lưu nháp", "draft-contract", "outline")}
+          ${button("Tạo hợp đồng", "create-contract")}
+          ${button("+ Tạo hợp đồng mới", "add-contract", "secondary")}
+        </div>
       </article>
       ${(!state.selectedContract || c.status !== "Đang hiệu lực") ? `
       <article class="card contract-preview">
@@ -649,8 +654,6 @@ const renderContract = () => {
           ${arrays.contractHistory().map((item) => `<p>${item.id}: ${item.tenant} • ${item.startDate} - ${item.endDate} • ${item.status}</p>`).join("") || "<p>Chưa có lịch sử.</p>"}
         </div>
         <div class="form-actions">
-          ${button("Lưu nháp", "draft-contract", "outline")}
-          ${button("Tạo hợp đồng", "create-contract")}
           ${button("Admin xác nhận hợp đồng", "admin-approve-contract")}
           ${button("Xuất PDF", "export-pdf", "secondary")}
         </div>
@@ -704,11 +707,10 @@ const renderInvoices = () => renderAdminShell("Quản lý hóa đơn", `
 `, "+ Tạo hóa đơn");
 
 const renderInvoiceCreate = () => {
-  const invoice = findInvoice();
   const calc = calculateInvoice();
-  const roomName = state.selectedRoom || invoice.room;
-  let tenantName = invoice.tenant || "";
-  if (!tenantName && roomName) {
+  const roomName = state.selectedRoom || "";
+  let tenantName = "";
+  if (roomName) {
     const activeContract = arrays.contracts().find(c => c.room === roomName && c.status === "Đang hiệu lực");
     if (activeContract) {
       tenantName = activeContract.tenant;
@@ -1505,6 +1507,15 @@ const handleAction = async (action) => {
       await loadAllData();
       setState({ selectedRoom: arrays.rooms()[0]?.id || "", adminPage: "rooms" });
       return showToast("Đã xóa phòng bằng API");
+    }
+
+    if (action === "add-contract") {
+      setState({ 
+        selectedContract: "",
+        contractStartDate: "",
+        contractEndDate: ""
+      });
+      return;
     }
 
     if (action === "add-tenant") return setState({ selectedTenant: "", adminPage: "tenant-form" });
