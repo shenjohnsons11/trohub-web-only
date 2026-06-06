@@ -342,7 +342,6 @@ const renderAdminShell = (title, content, action = "Tạo hóa đơn") => `
       <header class="topbar">
         <div>
           <h1>${title}</h1>
-          <p>Xin chào, ${state.landlord.name} • ${state.apiOnline ? "Dữ liệu API thật" : "Dữ liệu dự phòng"}</p>
         </div>
         <div class="topbar-actions">
           <div class="search wide"><input type="text" placeholder="🔍 Tìm kiếm phòng, khách, hóa đơn..." value="${state.searchQuery}" data-global-search /></div>
@@ -627,6 +626,7 @@ const renderContract = () => {
           ${selectField("Trạng thái", c.status || "Chờ ký", ["Chờ ký", "Đang hiệu lực", "Đã kết thúc"], "status")}
         </div>
       </article>
+      ${state.selectedContract ? `
       <article class="card contract-preview">
         <h2>HỢP ĐỒNG THUÊ PHÒNG TRỌ</h2>
         <p><b>Bên cho thuê:</b> ${state.landlord.name}</p>
@@ -645,6 +645,7 @@ const renderContract = () => {
           ${button("Xuất PDF", "export-pdf", "secondary")}
         </div>
       </article>
+      ` : ''}
     </div>
   `, "Xuất PDF");
 };
@@ -695,14 +696,26 @@ const renderInvoices = () => renderAdminShell("Quản lý hóa đơn", `
 const renderInvoiceCreate = () => {
   const invoice = findInvoice();
   const calc = calculateInvoice();
+  const roomName = state.selectedRoom || invoice.room;
+  let tenantName = invoice.tenant || "";
+  if (!tenantName && roomName) {
+    const activeContract = arrays.contracts().find(c => c.room === roomName && c.status === "Đang hiệu lực");
+    if (activeContract) {
+      tenantName = activeContract.tenant;
+    } else {
+      const roomObj = arrays.rooms().find(r => r.id === roomName);
+      if (roomObj && roomObj.tenant) tenantName = roomObj.tenant;
+    }
+  }
+
   return renderAdminShell("Tạo hóa đơn", `
     <div class="two-col invoice-builder" data-form="invoice">
       <article class="card form-card invoice-form-card">
         <h2>Xuất hóa đơn tháng này</h2>
         <p class="muted">Nhập chỉ số điện nước cũ / mới, hệ thống tự tính tiêu thụ và tổng tiền hóa đơn.</p>
         <div class="form-grid">
-          ${field("Phòng", state.selectedRoom || invoice.room, "text", "room")}
-          ${field("Khách thuê", invoice.tenant || findRoom().tenant || "", "text", "tenant")}
+          ${field("Phòng", roomName, "text", "room")}
+          ${field("Khách thuê", tenantName, "text", "tenant")}
           ${dateField("Từ ngày", state.createFrom, "createFrom")}
           ${dateField("Đến ngày", state.createTo, "createTo")}
           ${dateField("Hạn thanh toán", state.createDue, "createDue")}
@@ -1514,6 +1527,7 @@ const handleAction = async (action) => {
       if (!contract.id) return showToast("Chưa có hợp đồng để xác nhận");
       await api.contracts.sign(contract.id);
       await loadAllData();
+      setState({ selectedContract: "" });
       return showToast("Admin đã xác nhận hợp đồng thành công!");
     }
 
@@ -1605,6 +1619,22 @@ const handleAction = async (action) => {
 
 app.addEventListener("input", (event) => {
   const target = event.target;
+  
+  if (target.id === "reg-phone") {
+    let val = target.value.replace(/\D/g, "");
+    if (val.length > 10) val = val.slice(0, 10);
+    if (val.length > 7) val = val.slice(0, 4) + "." + val.slice(4, 7) + "." + val.slice(7);
+    else if (val.length > 4) val = val.slice(0, 4) + "." + val.slice(4);
+    target.value = val;
+    return;
+  }
+  if (target.id === "reg-idCard") {
+    let val = target.value.replace(/\D/g, "");
+    if (val.length > 12) val = val.slice(0, 12);
+    target.value = val;
+    return;
+  }
+
   if (target?.dataset?.calcField) {
     state = { ...state, [target.dataset.calcField]: target.value };
     updateInvoiceCalcOutputs();
