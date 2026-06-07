@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=16";
+import { api } from "./api.js?v=17";
 
 const app = document.querySelector("#app");
 
@@ -1451,9 +1451,9 @@ const saveInvoice = async (status) => {
   const calc = calculateInvoice();
   const payload = {
     ...form,
-    fromDate: state.createFrom,
-    toDate: state.createTo,
-    dueDate: state.createDue,
+    fromDate: form.createFrom || "",
+    toDate: form.createTo || "",
+    dueDate: form.createDue || "",
     roomAmount: numberValue(state.calcRoomAmount),
     electricityOld: numberValue(state.calcElectricityOld),
     electricityNew: numberValue(state.calcElectricityNew),
@@ -1503,7 +1503,8 @@ const handleAction = async (action) => {
       return showToast("Đã lưu phòng thành công!");
     }
     if (action === "delete-room") {
-      await api.rooms.delete(state.selectedRoom);
+      const room = findRoom();
+      await api.rooms.delete(room.objectId || state.selectedRoom);
       await loadAllData();
       setState({ selectedRoom: arrays.rooms()[0]?.id || "", adminPage: "rooms" });
       return showToast("Đã xóa phòng bằng API");
@@ -1524,8 +1525,10 @@ const handleAction = async (action) => {
     if (action === "save-tenant") {
       const payload = collectForm("tenant");
       if (!payload.password) delete payload.password;
-      if (state.selectedTenant) await api.tenants.update(state.selectedTenant, payload);
-      else await api.tenants.create(payload);
+      if (state.selectedTenant) {
+        const tenant = findTenant();
+        await api.tenants.update(tenant.objectId || state.selectedTenant, payload);
+      } else await api.tenants.create(payload);
       await loadAllData();
       setState({ adminPage: "tenants" });
       return showToast("Đã lưu khách thuê bằng API");
@@ -1562,7 +1565,7 @@ const handleAction = async (action) => {
     if (action === "export-month-invoice") return saveInvoice(state.calcPaidStatus);
     if (action === "mark-paid") {
       const invoice = findInvoice();
-      await api.invoices.markPaid(invoice.id, { paymentMethod: invoice.paymentMethod || "Tiền mặt" });
+      await api.invoices.markPaid(invoice.objectId || invoice.id, { paymentMethod: invoice.paymentMethod || "Tiền mặt" });
       // Reload đồng thời cả invoices lẫn payment history
       await loadAllData();
       setState({ adminPage: "invoice-detail" });
@@ -1574,13 +1577,13 @@ const handleAction = async (action) => {
       const repair = findRepair();
       const form = collectForm("repair");
       // Gửi đúng field backend cần: status, priority, note
-      await api.repairs.update(repair.id, { status: form.status, priority: form.priority, note: form.note });
+      await api.repairs.update(repair.objectId || repair.id, { status: form.status, priority: form.priority, note: form.note });
       await loadAllData();
       return showToast("Đã cập nhật yêu cầu sửa chữa");
     }
     if (action === "complete-repair") {
       const repair = findRepair();
-      await api.repairs.update(repair.id, { status: "Đã hoàn thành" });
+      await api.repairs.update(repair.objectId || repair.id, { status: "Đã hoàn thành" });
       await loadAllData();
       return showToast("Đã đánh dấu hoàn thành sửa chữa!");
     }
