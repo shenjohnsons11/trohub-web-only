@@ -58,7 +58,22 @@ export const api = {
     getStats: () => fetchAPI(API_CONFIG.ENDPOINTS.dashboardStats),
   },
   me: {
-    get: () => fetchAPI(API_CONFIG.ENDPOINTS.me),
+    get: async () => {
+      try {
+        const data = await fetchAPI(API_CONFIG.ENDPOINTS.me);
+        // data.data is handled by fetchAPI
+        return Array.isArray(data) ? data[0] : data;
+      } catch (e) {
+        console.warn("Tenant portal not fully initialized:", e);
+        return {
+          room: null,
+          stats: { unpaidInvoiceCount: 0, unpaidTotal: 0, paidTotal: 0, penaltyTotal: 0 },
+          contract: null,
+          invoices: [],
+          repairs: []
+        };
+      }
+    },
     createRepair: (payload) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/repairs`, { method: "POST", body: JSON.stringify(payload) }),
     payInvoice: (id, payload = {}) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/pay-invoice/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
     signContract: (id) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/sign-contract/${id}`, { method: "PUT", body: JSON.stringify({}) }),

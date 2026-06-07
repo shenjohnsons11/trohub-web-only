@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=17";
+import { api } from "./api.js?v=18";
 
 const app = document.querySelector("#app");
 
@@ -1767,7 +1767,7 @@ app.addEventListener("click", async (event) => {
 
   if (target.dataset.register !== undefined) {
     const fullName = document.querySelector("#reg-fullName").value.trim();
-    const phone = document.querySelector("#reg-phone").value.trim();
+    const phone = document.querySelector("#reg-phone").value.replace(/\D/g, "");
     const email = document.querySelector("#reg-email").value.trim();
     const idCard = document.querySelector("#reg-idCard").value.trim();
     const username = email; // Email chính là tên đăng nhập
