@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=18";
+import { api } from "./api.js?v=19";
 
 const app = document.querySelector("#app");
 
@@ -1746,12 +1746,27 @@ app.addEventListener("click", async (event) => {
     showToast("Đang đăng nhập...");
     try {
       const res = await api.auth.login(email, password);
-      localStorage.setItem("trohub_token", res.token);
-      localStorage.setItem("trohub_user", JSON.stringify(res.user || {}));
+      let userObj = res.user || res.data?.user || res || {};
+      const token = res.token || res.data?.token || (typeof res === "string" ? res : "");
+      
+      // Fallback: Decode JWT token to get role if not explicitly provided
+      if (token && typeof token === "string" && token.split(".").length === 3) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          userObj = { ...payload, ...userObj }; // response data overrides token data
+        } catch (e) {
+          console.warn("Failed to decode JWT token", e);
+        }
+      }
+      
+      const roleVal = Number(userObj.role);
+      
+      localStorage.setItem("trohub_token", token);
+      localStorage.setItem("trohub_user", JSON.stringify(userObj));
       state = {
         ...state,
-        user: res.user || null,
-        role: res.user?.role === 2 ? "tenant" : "admin",
+        user: userObj,
+        role: roleVal === 2 ? "tenant" : "admin",
         adminPage: "dashboard",
         tenantPage: "overview"
       };
